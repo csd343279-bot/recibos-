@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recibo de Pago</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#d8d8d8;margin:0;padding:24px;color:#111}
+.contenedor{width:min(1000px,100%);margin:auto;background:#ececec;padding-bottom:30px;box-shadow:0 8px 28px rgba(0,0,0,.18)}
+.encabezado{position:relative;height:300px}
+.franja{position:absolute;top:60px;left:0;width:100%;height:120px;background:#545454}
+.logo-box{position:absolute;left:12%;top:20px;width:180px;height:250px;background:linear-gradient(180deg,#888888 0%,#000000 100%);border-radius:15px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,.25);z-index:3}
+.logo-box::after{content:"";position:absolute;top:0;right:0;width:0;height:0;border-top:38px solid #ececec;border-left:38px solid transparent}
+.logo{position:absolute;top:10px;left:8px;width:164px;height:230px;object-fit:contain}
+.titulo{position:absolute;left:65%;top:120px;transform:translate(-50%,-50%);margin:0;font-family:'Great Vibes',cursive;font-size:95px;line-height:1;font-weight:normal;color:#d1a04c;text-shadow:1px 1px 2px rgba(0,0,0,.18);white-space:nowrap;z-index:2}
+.contenido{padding:0 38px}
+.datos-superiores{display:flex;justify-content:space-between;gap:30px;margin-top:35px}.grupo{width:30%}.grupo label{font-weight:bold}
+.linea{border:none;border-bottom:1px solid #777;background:transparent;width:100%;font-size:18px;padding:6px 2px}
+.datos{margin-top:50px}.fila{display:flex;align-items:center;margin-bottom:25px}.fila label{width:180px;font-size:18px;font-weight:bold}.fila input,.fila select{flex:1;border:none;border-bottom:1px solid #777;background:transparent;font-size:18px;padding:5px}
+table{width:100%;border-collapse:collapse;margin-top:40px}th{background:linear-gradient(#777,#000);color:#fff;padding:10px}td{border:1px solid #999;height:40px}td input{width:100%;border:none;height:38px;padding:5px;background:#fff;font-size:16px}
+.total-box{display:flex;justify-content:flex-end;margin-top:60px}.total-titulo{background:linear-gradient(#777,#000);color:#fff;width:150px;padding:25px;font-size:20px;font-weight:bold;border-radius:25px 0 0 25px}.total-valor{background:#cfcfcf;width:250px;padding:25px;font-size:28px;font-weight:bold;border-radius:0 25px 25px 0}
+.footer{margin-top:80px;background:linear-gradient(#777,#000);color:#fff;padding:25px;text-align:center;font-size:20px}
+.acciones{width:min(1000px,100%);margin:18px auto 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap}.boton{border:0;border-radius:10px;background:#545454;color:#fff;padding:14px 24px;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.2)}.boton:hover{background:#3f3f3f}.boton:disabled{opacity:.55;cursor:wait}.estado{font-size:15px;font-weight:700}.estado.ok{color:#176b2c}.estado.error{color:#a31919}
+.capturando .campo-captura{outline:none}
+@media(max-width:760px){body{padding:0}.contenedor{min-width:760px;transform-origin:top left}.acciones{padding:12px}.titulo{font-size:76px;left:67%}.logo-box{left:55px}.contenido{padding:0 28px}}
+@media print{body{background:#fff;padding:0}.contenedor{box-shadow:none}.acciones{display:none}}
+</style>
+</head>
+<body>
+<div class="contenedor" id="recibo">
+  <div class="encabezado">
+    <div class="franja"></div>
+    <div class="logo-box"><img src="logo.png" class="logo" alt="Logo de Remodelaciones Arzola"></div>
+    <h1 class="titulo">Recibo de pago</h1>
+  </div>
+  <div class="contenido">
+    <div class="datos-superiores">
+      <div class="grupo"><label for="fecha">FECHA:</label><input type="text" id="fecha" class="linea campo-captura" readonly></div>
+      <div class="grupo"><label for="pedido">NÚMERO DE PEDIDO:</label><input type="text" id="pedido" class="linea campo-captura" readonly></div>
+      <div class="grupo"><label>UBICACIÓN:</label><br><br><input id="lote" type="number" inputmode="numeric" min="0" placeholder="Lote" class="linea campo-captura"><br><br><input id="linea" type="number" inputmode="numeric" min="0" placeholder="Línea" class="linea campo-captura"></div>
+    </div>
+    <div class="datos">
+      <div class="fila"><label for="cliente">Nombre del cliente:</label><input id="cliente" class="campo-captura" type="text"></div>
+      <div class="fila"><label for="telefono">Teléfono:</label><input id="telefono" class="campo-captura" type="tel" inputmode="numeric"></div>
+      <div class="fila"><label for="servicio">Tipo de servicio:</label><select id="servicio" class="campo-captura"><option>Calcomanía (solo letras)</option><option>Letras escritas</option><option>Sepultura</option><option>Plancha</option></select></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:15%">Cantidad</th><th>Descripción</th><th style="width:20%">Total</th></tr></thead>
+      <tbody id="tabla"></tbody>
+    </table>
+    <div class="total-box"><div class="total-titulo">TOTAL</div><div class="total-valor" id="granTotal">$0.00</div></div>
+  </div>
+  <div class="footer">☎ (+52) 627 148 9675 &nbsp;&nbsp;&nbsp; ✉ remodelacionesarzola31@gmail.com</div>
+</div>
+<div class="acciones">
+  <button class="boton" id="descargar" type="button">Descargar recibo</button>
+  <span class="estado" id="estado" role="status" aria-live="polite"></span>
+</div>
+<script>
+const FORM_ID = "ga6fg3buyxa";
+const FORM_ENDPOINT = `https://forminit.com/f/${FORM_ID}`;
+const hoy = new Date();
+const fechaCampo = document.getElementById("fecha");
+const pedidoCampo = document.getElementById("pedido");
+const tabla = document.getElementById("tabla");
+const botonDescargar = document.getElementById("descargar");
+const estado = document.getElementById("estado");
+
+fechaCampo.value = hoy.toLocaleDateString("es-MX");
+let pedidoActual = parseInt(localStorage.getItem("pedidoActual") || "1", 10);
+pedidoCampo.value = String(pedidoActual).padStart(5,"0");
+
+for(let i=0;i<10;i++){
+  const fila=document.createElement("tr");
+  fila.innerHTML=`<td><input class="cantidad campo-captura" aria-label="Cantidad ${i+1}" type="number" inputmode="numeric" min="0" step="1"></td><td><input class="descripcion campo-captura" aria-label="Descripción ${i+1}" type="text"></td><td><input class="importe campo-captura" aria-label="Total ${i+1}" type="number" inputmode="decimal" min="0" step="0.01"></td>`;
+  tabla.appendChild(fila);
+}
+
+function obtenerTotal(){
+  return Array.from(document.querySelectorAll(".importe")).reduce((s,c)=>s+(parseFloat(c.value)||0),0);
+}
+function calcularTotal(){
+  document.getElementById("granTotal").textContent=obtenerTotal().toLocaleString("es-MX",{style:"currency",currency:"MXN",minimumFractionDigits:2});
+}
+document.addEventListener("input",e=>{if(e.target.classList.contains("importe"))calcularTotal();});
+calcularTotal();
+
+function esperarImagenes(elemento){
+  const imagenes=Array.from(elemento.querySelectorAll("img"));
+  return Promise.all(imagenes.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener("load",resolve,{once:true});img.addEventListener("error",resolve,{once:true});})));
+}
+
+async function crearPdf(){
+  if(!window.html2canvas || !window.jspdf) throw new Error("No se pudieron cargar las librerías para crear el PDF. Comprueba la conexión a Internet.");
+  const recibo=document.getElementById("recibo");
+  await document.fonts.ready;
+  await esperarImagenes(recibo);
+  recibo.classList.add("capturando");
+  const canvas=await html2canvas(recibo,{scale:2,useCORS:true,backgroundColor:"#ececec",logging:false,windowWidth:recibo.scrollWidth,windowHeight:recibo.scrollHeight});
+  recibo.classList.remove("capturando");
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+  const margen=6;
+  const ancho=210-(margen*2);
+  const altoDisponible=297-(margen*2);
+  const alto=canvas.height*ancho/canvas.width;
+  const escala=alto>altoDisponible?altoDisponible/alto:1;
+  const anchoFinal=ancho*escala;
+  const altoFinal=alto*escala;
+  const x=(210-anchoFinal)/2;
+  pdf.addImage(canvas.toDataURL("image/jpeg",0.95),"JPEG",x,margen,anchoFinal,altoFinal,undefined,"FAST");
+  return pdf.output("blob");
+}
+
+function resumenConceptos(){
+  const filas=[];
+  document.querySelectorAll("#tabla tr").forEach(fila=>{
+    const cantidad=fila.querySelector(".cantidad").value.trim();
+    const descripcion=fila.querySelector(".descripcion").value.trim();
+    const importe=fila.querySelector(".importe").value.trim();
+    if(cantidad||descripcion||importe) filas.push(`${cantidad||"0"} | ${descripcion||"Sin descripción"} | $${Number(importe||0).toFixed(2)}`);
+  });
+  return filas.length?filas.join("\n"):"Sin conceptos capturados";
+}
+
+function descargarBlob(blob,nombre){
+  const url=URL.createObjectURL(blob);
+  const enlace=document.createElement("a");
+  enlace.href=url; enlace.download=nombre;
+  document.body.appendChild(enlace); enlace.click(); enlace.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+async function enviarAForminit(pdfBlob,nombreArchivo){
+  const datos=new FormData();
+  datos.append("fi-text-folio",pedidoCampo.value);
+  datos.append("fi-text-fecha",fechaCampo.value);
+  datos.append("fi-text-cliente",document.getElementById("cliente").value.trim()||"Sin nombre");
+  datos.append("fi-text-telefono",document.getElementById("telefono").value.trim()||"Sin teléfono");
+  datos.append("fi-text-ubicacion",`Lote ${document.getElementById("lote").value||"-"}, Línea ${document.getElementById("linea").value||"-"}`);
+  datos.append("fi-text-servicio",document.getElementById("servicio").value);
+  datos.append("fi-text-conceptos",resumenConceptos());
+  datos.append("fi-number-total",obtenerTotal().toFixed(2));
+  datos.append("fi-file-recibo",pdfBlob,nombreArchivo);
+  const respuesta=await fetch(FORM_ENDPOINT,{method:"POST",body:datos,headers:{Accept:"application/json"}});
+  let resultado={};
+  try{resultado=await respuesta.json();}catch(_){resultado={};}
+  if(!respuesta.ok) throw new Error(resultado.message||`Forminit respondió con el código ${respuesta.status}.`);
+  return resultado;
+}
+
+botonDescargar.addEventListener("click",async()=>{
+  botonDescargar.disabled=true;
+  estado.className="estado";
+  estado.textContent="Creando el PDF...";
+  const nombreCliente=document.getElementById("cliente").value.trim();
+  const nombreSeguro=(nombreCliente || "Cliente-sin-nombre")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g,"")
+    .replace(/\s+/g," ")
+    .trim()
+    .slice(0,80);
+  const nombreArchivo=`${nombreSeguro}.pdf`;
+  try{
+    const pdfBlob=await crearPdf();
+    descargarBlob(pdfBlob,nombreArchivo);
+    estado.textContent="PDF descargado. Enviando copia por correo...";
+    await enviarAForminit(pdfBlob,nombreArchivo);
+    estado.className="estado ok";
+    estado.textContent="Recibo descargado y copia enviada correctamente.";
+    pedidoActual++;
+    localStorage.setItem("pedidoActual",String(pedidoActual));
+    pedidoCampo.value=String(pedidoActual).padStart(5,"0");
+  }catch(error){
+    console.error(error);
+    estado.className="estado error";
+    estado.textContent=`El PDF se descargó si llegó a generarse, pero no se pudo completar el envío: ${error.message}`;
+  }finally{
+    botonDescargar.disabled=false;
+  }
+});
+</script>
+</body>
+</html>
